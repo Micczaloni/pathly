@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Pathly — track running and cycling workouts on an interactive map."
+    />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1220'/%3E%3Cpath d='M14 42c8-18 14-26 18-26s6 10 18 26' fill='none' stroke='%233dffb5' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='44' cy='22' r='5' fill='%23ff8c42'/%3E%3C/svg%3E" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/leaflet@2.0.0-alpha.1/dist/leaflet.css"
+      integrity="sha256-P+hWJNlpL+GBSRYC7cdsDbQH91URmpDeOzLp7DbFRtE="
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="style.css" />
+
+    <script defer type="importmap">
+      {
+        "imports": {
+          "leaflet": "https://cdn.jsdelivr.net/npm/leaflet@2.0.0-alpha.1/dist/leaflet.js"
+        },
+        "integrity": {
+          "https://cdn.jsdelivr.net/npm/leaflet@2.0.0-alpha.1/dist/leaflet.js": "sha256-gj5JhNAaMi6LCs+jVFOk8sXDe1sWSS2Zlc87m+trLiQ="
+        }
+      }
+    </script>
+    <script defer type="module" src="script.js"></script>
+    <title>Pathly — Map your workouts</title>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <header class="sidebar__header">
+          <div class="brand" aria-label="Pathly">
+            <span class="brand__mark" aria-hidden="true"></span>
+            <span class="brand__text">Pathly</span>
+          </div>
+          <p class="brand__tagline">Pin every run. Trace every ride.</p>
+          <p class="brand__howto">
+            Click the map to add a workout · Click a card to fly there
+          </p>
+        </header>
+
+        <div class="toolbar">
+          <label class="toolbar__label" for="sort">
+            Sort
+            <select id="sort" class="toolbar__select">
+              <option value="date-desc">Newest</option>
+              <option value="date-asc">Oldest</option>
+              <option value="distance-desc">Distance ↓</option>
+              <option value="distance-asc">Distance ↑</option>
+              <option value="duration-desc">Duration ↓</option>
+            </select>
+          </label>
+
+          <div class="toolbar__actions">
+            <button type="button" class="btn btn--ghost" id="btn-draw" title="Draw a route">
+              Draw route
+            </button>
+            <button type="button" class="btn btn--ghost" id="btn-fit" title="Show all workouts">
+              Fit map
+            </button>
+            <button type="button" class="btn btn--danger" id="btn-clear" title="Delete all workouts">
+              Clear all
+            </button>
+          </div>
+        </div>
+
+        <p class="hint" id="draw-hint" hidden>
+          Click the map to add route points. Double-click or press Finish to save.
+          <button type="button" class="btn btn--small" id="btn-finish-draw">Finish</button>
+          <button type="button" class="btn btn--small btn--ghost" id="btn-cancel-draw">Cancel</button>
+        </p>
+
+        <div class="workout-panel">
+          <form class="form hidden" autocomplete="off">
+            <div class="form__row">
+              <label class="form__label" for="type">Type</label>
+              <select id="type" class="form__input form__input--type">
+                <option value="running">Running</option>
+                <option value="cycling">Cycling</option>
+              </select>
+            </div>
+            <div class="form__row">
+              <label class="form__label" for="distance">Distance</label>
+              <input
+                id="distance"
+                class="form__input form__input--distance"
+                type="number"
+                min="0"
+                step="0.1"
+                placeholder="km"
+              />
+            </div>
+            <div class="form__row">
+              <label class="form__label" for="duration">Duration</label>
+              <input
+                id="duration"
+                class="form__input form__input--duration"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="min"
+              />
+            </div>
+            <div class="form__row">
+              <label class="form__label" for="cadence">Cadence</label>
+              <input
+                id="cadence"
+                class="form__input form__input--cadence"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="spm"
+              />
+            </div>
+            <div class="form__row form__row--hidden">
+              <label class="form__label" for="elevation">Elev gain</label>
+              <input
+                id="elevation"
+                class="form__input form__input--elevation"
+                type="number"
+                step="1"
+                placeholder="m"
+              />
+            </div>
+            <div class="form__actions">
+              <button type="submit" class="btn btn--primary form__btn">Save</button>
+              <button type="button" class="btn btn--ghost" id="btn-cancel-form">Cancel</button>
+            </div>
+          </form>
+
+          <ul class="workouts"></ul>
+        </div>
+
+        <footer class="sidebar__footer">
+          <p>Built with Leaflet · Data stays in your browser</p>
+        </footer>
+      </aside>
+
+      <div id="map" role="application" aria-label="Workout map"></div>
+    </div>
+
+    <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+    <dialog class="modal" id="confirm-modal">
+      <form method="dialog" class="modal__inner">
+        <h2 class="modal__title" id="confirm-title">Are you sure?</h2>
+        <p class="modal__text" id="confirm-text"></p>
+        <div class="modal__actions">
+          <button value="cancel" class="btn btn--ghost">Cancel</button>
+          <button value="confirm" class="btn btn--danger" id="confirm-ok">Confirm</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

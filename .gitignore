@@ -1,0 +1,11 @@
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+node_modules/
+
+# Course leftovers — not part of Pathly
+logo.png
+icon.png
+Mapty-*.png
